@@ -1,2 +1,4 @@
-# vault-associate-certification
-Information regarding to the Vault Associate Certification
+<img src="icons/vault.png" />
+
+#  Vault Associate Certification
+Information regarding the Vault Associate Certification
