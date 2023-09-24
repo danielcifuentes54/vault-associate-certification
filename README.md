@@ -38,7 +38,7 @@ Information regarding the Vault Associate Certification
 * Dynamically generate secrets upon request
 * Fully-featured API
 * Identity-based access across different clouds and systems
-* Provide Encryption asa service
+* Provide Encryption as a service
 * Act as a Root or intermediate certificate authority
 
 > Centralize the storage of secrets across the organization into a consolidated platform
@@ -87,7 +87,7 @@ Information regarding the Vault Associate Certification
 
 * Everything in Vault is **path-based**
 * The path prefix tell Vault which component a request should be routed.
-* Secret engines, auth methods, and audit devices are  "mmounted" at a specified path
+* Secret engines, auth methods, and audit devices are  "mounted" at a specified path
 * Paths available are dependent on the features enabled in Vault, such as Auth methods and secrets engines
 * System backend is a default backend in Vault which is mmounted at the /sys endpoint
 * Vault components can be enabled at ANY path you'd like using the -path flag (Each component have a default path)
@@ -130,3 +130,45 @@ Information regarding the Vault Associate Certification
       * When initializing Vault, you can request the individual shards to be encrypted with different PGP Keys
       * When unsealing Vault,yYou will need an equal number of employees to provide they key which is equal to the threshold
       * Key shards should not be stored online and shoul be highly protected - ideally stored encypted
+    * Unsealing with Auto Unseal:
+      * Uses a cloud service to protect our master key
+      * Cloud Auto Unseal automatically unseals Vault upon service or node restart **without additional intervention**
+      * Available in both open source & Enterprise editions
+      * You must to configure this unseal in the configuration file, for example:
+        ``` bash 
+        seal "awskms" {
+          region = "AWS_REGION"
+          kms_key_id = "AWS_KMS_KEY _ID"
+        }
+        ```
+    * Unsealing with Transit Auto Unseal
+      * Have a Vault cluster for unsealing (it generates a dependency), uses the Transit Secret Engine of a different Vault cluster
+      * Must be configured in a namespace
+      * Support key rotation
+      * Available in open source & Enterprise editions
+      * The core Vault cluster must be higly-available
+      * You must to configure this unseal in the configuration file, for example:
+        ``` bash 
+        seal "transit" {
+          address     = "VAULT_ADDRESS"
+          token       = "VAULT_TOKEN"
+          key_name    = "KEY_NAME"
+          mounth_path = "MOUNTH_PATH"
+
+          // Key configuration
+          ...
+
+          // TLS Configuration
+          ...
+        }
+        ```
+
+## Vault Commands
+
+#### Enable transit
+
+`vault secrets enable transit`
+
+#### Create an encryption key
+
+`vault write -f <KEY_PATH/KEY_NAME>`
