@@ -217,10 +217,75 @@ Information regarding the Vault Associate Certification
 * UI must be enabled via configuration file.
 * Authentication required to access any of the interfaces
 
+### Consul Storage Backend
+
+* Consul is deployed using multiple nodes
+* All data is replicated among all nodes in the cluster
+* Vault runs a consul client locally, this component will connect to the consul cluster
+
+### Integrated Storage Backend
+
+* Vault internal storage option
+* Leverages Raft consensus protocol
+* All vault nodes have a copy of Vaul's data (All data is replicated among all nodes in the cluster )
+* Eliminates Network hop to Consul
+* Support high availability
+* Only need troubleshoot Vaul
+* Built-in Snapshots For data retention
+* Hashicorp supported
+* Define a local path to store replicated data
+* You can use the retry_join section in the configuration to auto discover the nodes through the tags on AWS, in other case you can set the ip address directly
+
+## Installing Vault
+
+### Installation
+
+* Vault is platform agnostic, it can be installed in different platforms like: K8S, EC2 instances, Virtual Machines, Physical servers.
+* Also available for many operating systems (MacOS, Windows, Linux, FreeBSD, NetBSD, OpenBSD, Solaris).
+* Operations order:
+  1. Install Vault.
+  2. Create a configuration file.
+  3. Initialize Vault.
+  4. Unseal Vault.
+* Download Vault: 
+  * vaultproject.io 
+  * Package Manager
+  * Helm
+
+### Vault Dev Server
+
+* Quickly run vault without configuration
+* Automatically initialized and unsealed
+* Enables the UI (localhost)
+* Provides an unseal key
+* Automatically log in as root
+* Non persistent - Runs in memory
+* Insecure - does not use TLS
+* set the listener to 127.0.0.1:8200
+* Mounts a K/V v2 Secret Engine
+* Provides a root token
+* Where whould I use dev server?
+  * Proof of concepts
+  * New Development integrations
+  * Testing new features of Vault
+  * Experimenting with features
+* `vault server -dev`
+
+### Running Vault server in production
+
+* Use a storage backend that meets the requeriments
+* Multiple Vault nodes will be configured as a cluster
+* Single node is not a recommended architecture
+* `vault server -config=<FILE_PATH>`
+
+
 ## Vault Commands
 
 ### Init Vault
 `vault operator init -key-shares=3 -key-threshold=2`
+
+### login in Vault
+`vault login`
 
 ### Ckeck Configuration File
 `vault operator diagnose -config=/etc/vault.d/vault.hcl`
@@ -231,18 +296,18 @@ Information regarding the Vault Associate Certification
 ### Unseal Vault & Migrate
 `vault operator unseal -migrate `
 
-### login in Vault
-
-`vault login`
-
 ### Enable Secret Engine
 `vault secrets enable -path=secrets kv-v2`
 ### List Secrets
 `vault secrets list`
 ### Enable transit
-
 `vault secrets enable transit`
 
 ### Create an encryption key
-
 `vault write -f <KEY_PATH/KEY_NAME>`
+
+### Manually join standby nodes to the cluster (raft storage backend)
+`vault operator raft join <VAULT_URL:VAULT_PORT>`
+
+### Lsit the cluster members
+`vault operator raft list-peers`
