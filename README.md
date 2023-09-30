@@ -278,6 +278,60 @@ Information regarding the Vault Associate Certification
 * Single node is not a recommended architecture
 * `vault server -config=<FILE_PATH>`
 
+## Authentication Methods
+
+### Auth Methods
+
+* Are components that performed authentication and managed identities
+* Responsible for assign identity and policies to user
+* Multiple authentication methods can be enabled 
+* Once authenticated, Vault will issue a client token (**funadamental goal is to get a Vault token**) with policies and a TTL associated 
+* Each auth method is enabled at a path
+* Auth methods - Workflow
+  * Authentication with credentials :arrow_right: Validate credentials agains provider :arrow_right: Generate Vault token (policies and TTL associated) :arrow_right: retrurn token to user :arrow_right: access secrets in Vault using tokens
+* Token Auth Methods
+  * Is responsible for creating and storing tokens 
+  * Can not be disabled
+  * Authenticating with external identity (LDAP, OIDC)
+  * Enabled by default
+  * It generates the root token
+* if you don't supply a token, Vault return a `403 Access Denied`
+* Most auth methods **must be enabled** before you can use them
+
+### Configuring Auth Methods
+
+* Use the `vault auth` command
+  * enable
+  * disable
+  * list 
+  * tune
+  * help  
+* After the auth method has been enabled, use the auth prefix to configure the auth method
+  * `vault write auth/<PATH_NAME>/<OPTION>`
+
+### Vault Atuhentication
+
+* ways to autheticate using the CLI
+  * use the `vault login` command
+    * Authenticate using a token method (default) or another authentication method
+    * token helper: caches the token after authentication in a local file (.vault-token).
+    * if you already have a token just use `vault login <TOKEN>`
+    * approle authentication: `vault write auth/approle/roles/login role_id=<ROLE_ID> secret_id=<SECRET_ID>`
+  * use the `VAULT_TOKEN` env 
+* Authentication using the API 
+  * api return a JSON response that include, token, token accessor, information about atthaced policies
+  * Authentication method POST 
+  * `curl -X POST --data @auth.json <VAULT_URL>/v1/auth/approle/login`
+  * `curl -X POST --data @password.json <VAULT_URL>/v1/auth/okta/login/daniel@cifuentes.com`
+
+### Vault Entities 
+
+* Entity: representation of a single person or system used to log into vault
+* Alias: is a combination of ht method plus some identification, it is a mapping between an entity and auth method(s), for exammple "userpass:danielc", "LDAP:jsmith@example.com" (those have different entity_id)
+* Vault always creates any time that you logged for the first time, and attaches and alias to it
+  * This is done by the Identity secrets engine
+* You can manually create an entity to **map multiple entities for a single user**, any token that are created for the entity **inherit the capabilities** that are granted by alias(es)
+
 
 ## Vault Commands
 
