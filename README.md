@@ -327,10 +327,43 @@ Information regarding the Vault Associate Certification
 ### Vault Entities 
 
 * Entity: representation of a single person or system used to log into vault
-* Alias: is a combination of ht method plus some identification, it is a mapping between an entity and auth method(s), for exammple "userpass:danielc", "LDAP:jsmith@example.com" (those have different entity_id)
+* Alias: is a combination of the method plus some identification, it is a mapping between an entity and auth method(s), for exammple "userpass:danielc", "LDAP:jsmith@example.com" (those have different entity_id)
 * Vault always creates any time that you logged for the first time, and attaches and alias to it
   * This is done by the Identity secrets engine
 * You can manually create an entity to **map multiple entities for a single user**, any token that are created for the entity **inherit the capabilities** that are granted by alias(es)
+
+### Vault Groups
+
+* A group can contian multiple entities as its members
+* A group can also have subgroups
+* Policies can be set on the group and the permissions will be granted to all members of the group
+* Token inherits capabilities granted by alias, entity, and the group.
+* Group types:
+  * Internal Group: Groups created in Vault to group entities to group entities to propagate identical permissions
+    * Frequently used when using Vault namepsaces to propagate permissions down to child namespaces.
+  * External Group: Groups wich Vault infers and creates based on group associations coming from auth methods (created manually or automatically)
+    * Allows you to set up once in Vault and continues manage permissions in the identity provider.
+
+### Choosing an Auth Methods
+
+* Many auth methods may satisfy the requiriments, but often there's one that works "the best" for a situation
+* In contrast, just because you are using a cetain platform does not mean you need to use the related auth method.
+* Key words when choosing an auth method:
+  * Frequently Rotated (dynamic credential): AWS, Azure, GCP, K8S, LDAP
+  * Remove secrets from process or build pipeline (dynamic and integrated): AWS, Azure, GCP, K8S
+  * Use existing user credentials (integrate with an existing identity provider): LDAP, OIDC, Github, Okta
+
+### Human VS System auth methods
+
+* Human-based Auth Methods (LDAP, OIDC, Github, etc):
+  * Integrates with an existing identity provider
+  * Requeries Hands-on approach to use
+  * Logging with a prompt or pop-up
+  * Often configured with the platforms integrated MFA.
+* System-based Auth Methods (AWS,Azure, TLS, Approle, etx)
+  * Uses non-human friendly methologies (not easy to remember)
+  * Usually integrates with an existing backend platform 
+  * Vault validates credentials with the platform
 
 
 ## Vault Commands
@@ -357,11 +390,27 @@ Information regarding the Vault Associate Certification
 ### Enable transit
 `vault secrets enable transit`
 
-### Create an encryption key
-`vault write -f <KEY_PATH/KEY_NAME>`
+### Create an object on Vault
+`vault write -f <OBJECT_PATH>`
+`vault write auth/approle/role/engineering policies=engineering-policy`
+
+### list objects on Vault
+`vault list <OBJECT_PATH>`
+
+### Read an object on Vault
+`vault read  <OBJECT_PATH>`
+
+### Create a root object
+`vault token create`
+
+### Revoke a root token
+`vault token revoke`
 
 ### Manually join standby nodes to the cluster (raft storage backend)
 `vault operator raft join <VAULT_URL:VAULT_PORT>`
 
 ### Lsit the cluster members
 `vault operator raft list-peers`
+
+### Get created tokens
+`vault list auth/token/accessors`
