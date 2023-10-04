@@ -365,7 +365,61 @@ Information regarding the Vault Associate Certification
   * Usually integrates with an existing backend platform 
   * Vault validates credentials with the platform
 
+## Vault Policies
 
+* Vault policies provides operators a way to **permit or deny access** to certain paths or actions within Vault (RBAC)
+* Policies are written in **declarative statements** in JSON or HCL
+* Policies are **Deny by default** (implicit deny), policies support explicit deny that takes precedence over any other permission
+* Policies are attached to a token. A token can have multiple policies, policies are comulative and capabilities are additive
+* out of the box Vault policies:
+  * root
+    * You can not change nor delete this policy
+    * Attached to all roots tokens
+  * default
+    * You can change this policy but it can not be deleted
+    * Attached to all non-root tokens by default (can be removed if needed)
+* Everything in Vault is path based so policies grant or forbid access to those paths and operations
+* Two key parts to a Vault Policy:
+  ``` 
+  pat "<PATH>" {
+    capabilities = [<LIST_OF_PERMISSIONS>]
+  }
+  ```
+* There is root protected paths that requires a root token or sudo capability to use, example:
+  * auth/token/create-orphan
+  * pki/root/sign-self-issued
+  * sys/rotate
+  * sys/seal
+  * sys/step-down
+  * 
+    ``` 
+    pat "sys/step-down" {
+      capabilities = ["sudo"]
+    }
+    ```
+
+### Capabilities
+
+1) Create
+2) Read
+3) Update
+4) Delete
+5) List
+6) Sudo
+7) Deny
+
+### Customizing the Path
+
+* The star "*" is a wildcard and can only be used at the end of a path (i.e., kv/data/prod/*)
+* The plus "+" is a wildcard mmatching for a single directory in the path (i.e., secret/+/+/db)
+* ACL Templating: 
+  * Use variable replacement in some policy string with values available to the token
+  * 
+  ```
+  path "secret/data/{{identity.entity.id}}/*" {
+    capabilities = ["read", "create", "update", "delete" ]
+  }
+  ```
 ## Vault Commands
 
 ### Init Vault
@@ -406,6 +460,21 @@ Information regarding the Vault Associate Certification
 ### Revoke a root token
 `vault token revoke`
 
+### Policies
+### List policies
+`vault policy list`
+
+### read policies
+`vault policy read <POLICY_NAME>`
+
+### delete policies
+`vault policy delete <POLICY_NAME>`
+
+### format policies
+`vault policy fmt`
+
+### create new policies
+`vault policy write <POLICY_NAME> <POLICY_FILE_PATH>`
 ### Manually join standby nodes to the cluster (raft storage backend)
 `vault operator raft join <VAULT_URL:VAULT_PORT>`
 
