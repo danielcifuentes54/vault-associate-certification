@@ -420,6 +420,117 @@ Information regarding the Vault Associate Certification
     capabilities = ["read", "create", "update", "delete" ]
   }
   ```
+
+## Vault Tokens
+
+* After Vault 1.10 these are the token prefix:
+  * hvs: service token
+  * hvb: batch token
+  * hvr: recovery token
+* Tokens are the core method for authentication
+  * Most operations in Vault requiere an existing token (not all)
+* The token auth method is responsible for creating and storing tokens and this one can not be deleted 
+* Tokens have one or more policies attached to control what the token is allowed to perform
+* Token information/metadata attached
+  * Accesor
+  * Policies
+  * TTL
+  * Max TTL
+  * Number of uses left
+  * Orphaned token
+  * Renewal status
+* Token type can be assigned directly in the token creation or in the auth method creation for example:
+  * `vault write auth/approle/role/training policies="training" token_type="batch"`
+  * `vault write auth/approle/role/jenkins policies="jenkins" period="24h"`
+### Types of Tokens
+
+* Service Token
+  * are the default token in vault
+  * can be renewed, revoked, and create child tokens
+  * Use Limit Token
+    * you can assign a use limit (how many times the token can be used)
+    * Use limmits token expire when at the end of their last use or at the end of their TTL (The first thing that happens)
+    * the metadata "num_uses" shows how many  remaining uses has the token
+    * create a use limit token:
+      `vault token create -policy=<POLICY_NAME> -use-limit=2`
+  * Periodic Service Token
+    * Root or sudo users have the ability to generate it.
+    * It have a TTL but not a MaxTTL
+    * create a periodic token:
+      `vault token create -policy=<POLICY_NAME> -period=24h`
+  * Orphan Service Token
+    * Expiration is not influenced by its parents (Orphan tokens are not children of their parents)
+    * sudo permissions at the path `auth/token/create-orphan` are neccesary to create an orphan token
+    * Still expire when their own MaxTTL is reached
+    * create a use limit token:
+      `vault token create -policy=<POLICY_NAME> -orphan`
+  * CIDR-Bound Token
+    * Itt is just a regular service token with additional CIDR-bound configuration
+* Batch Token
+  * Designed to be lightweight & scalable
+  * They are not persisted to storage but they are not fully-featured
+  * Ideal for high-volume operations, such as encyption
+  * Can be used for DR replication cluster promotion as well
+
+
+### Token Heirarchy
+
+* When a parent token is revoked, all of its children are revoked as well
+  * a child token is when you create a token using another token (Parent token)
+* Each token has a TTL (root token is an exception)
+* Tokens are revoked once reached its TTL unless renewed
+  * Once a token reaches its maxTTL, it get revoked (renew do not work)
+  * a token can be revoked manually
+
+### Managing Tokens Using the API
+
+* Authentication will result in a JSON response with a token at the path `.auth.client_token`
+* Client token must to be sent in future requests:
+  * X-Vault-Token header
+  * Authorization bearer
+   
+### Root Tokens
+
+* It is a superuser that has unlimited access to vault 
+  * it does not have a TTL
+  * Attached to a root policy
+* If you are using a root token, you can create a root token **with ttl**
+* Root tokens should not be used on a day-to-day basis.
+* Where do the Root tokens come from?
+  * Initial root token comes from vault initialization
+    * Once your new auth method is configured and tested, **the root token should be revoked**
+  * Create a root token from an existing root token
+    * authenticate with a root token and then run the command `vault token create`
+  * Create a root token using unseal/recovery keys
+    * for an emergency or to do a particular task
+    * A quorum of unseal a key holders can generate a new root token
+      * Enforces the **"No single person has complete access to Vault"**
+    * Steps:
+      1. Initialize the root generation `vault operator generator-root -init`
+        * It returns and **OTP** (one time password)
+      2. Each key holder runs "generate root" with their unseal key `vault operator generator-root`
+        * When you use the last unseal key, it returns an **encoded token**
+      3. Decode the generated root token  `vault operator generator-root -otp=<OTP> -decode=<ENCODED_TOKEN>`
+
+### Token Accessors
+
+* Every token has a token accessor that is used as a **reference to the token**
+* Can be used to perform limited actions:
+  * Look up token properties
+  * Look up the capabilities of a token
+  * Renew the Token
+  * Revoke the Token
+* Token accessors cannot be used for authentication to Vault or to perform additional requests
+
+### Token TTL
+
+* TTL is based on the creation or renewal time
+* Renewal must take place before the TTL expires
+* A token can be renewed up until the MAX TTL
+* Defaukt TTL: 768h (32 days) - This value can be changed in the Vault configuration
+* You can configure the auth method to set an specific TTL:
+  * `vault write auth/approle/training-role token_ttl=1h token_max_ttl=24h`
+
 ## Vault Commands
 
 ### Init Vault
@@ -457,9 +568,6 @@ Information regarding the Vault Associate Certification
 ### Create a root object
 `vault token create`
 
-### Revoke a root token
-`vault token revoke`
-
 ### Policies
 ### List policies
 `vault policy list`
@@ -475,6 +583,22 @@ Information regarding the Vault Associate Certification
 
 ### create new policies
 `vault policy write <POLICY_NAME> <POLICY_FILE_PATH>`
+
+### Vault Tokens
+### get capabilities associated to the token and a path
+`vault token capabilities <TOKEN> <PATH>`
+
+### create a token
+`vault token create`
+
+### Get token information (get metadata associated to the token)
+`vault token lookup <TOKEN>`
+### renew a token
+`vault token renew <TOKEN>`
+
+### Revoke a token
+`vault token revoke <TOKEN>`
+`vault token revoke -accesor=<TOKEN_ACCESOR>`
 ### Manually join standby nodes to the cluster (raft storage backend)
 `vault operator raft join <VAULT_URL:VAULT_PORT>`
 
