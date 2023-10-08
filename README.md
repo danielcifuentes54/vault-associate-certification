@@ -531,6 +531,129 @@ Information regarding the Vault Associate Certification
 * You can configure the auth method to set an specific TTL:
   * `vault write auth/approle/training-role token_ttl=1h token_max_ttl=24h`
 
+## Vault Secrets Engines
+
+### Static vs Dynamic Secrets
+
+* Problems with static secrets:
+  * Expiration
+  * Secrets are not secrets
+  * Validity
+  * Rotation
+  * Long-Lived
+* Why you should use dynamic secrets?
+  * Create secrets on demand
+  * Associated leases
+  * Validity period
+  * Technical debt solved
+  * Renewal
+  * Revocation
+
+### Secrets Engines
+
+* Secrets engines are the reason you deploy Vault.
+* Are components that can store, generate, or encrypt data.
+* You can enable multiple instances of the same secret engine
+* Are enabled and isolated at a path
+* A secret is anything an organization deems sensitive within their organization
+* Use Vault to generate and manage lifecycle
+* You can enabled a secret engine using the CLI, API or, UI (most of them) - (cubyhole and identity are enabled by default)
+* configuring a secret engine:
+  1. Configure Vault with access to the platform
+  2. Configure roles based on permmissions needed
+
+### Key Value Secret Engine
+
+* Store Static Secrets
+* Versions:
+  * v1
+  * v2 (kv-v2): versioned
+* Like everything else in Vault, secrets written to the KV secrets engine are encrypted using 256-bit AES
+* can be enabled at different paths
+* Secrets are stored as key-value pairs at a defined path (e.g secret/application/web01)
+* when you run Vault -dev server mode,Vault enables kv v2 secrets engine at the secret/ path by default
+* You can store secrets in all the path parts
+* enabled it
+  * `vault secrets enable kv`
+  * `vault secrets enable kv-v2` - `vault secrets enable -path=training -version=2 kv`
+* You can upgrade a KV v1 to a KV v2 (yo can not undo this upgrade)
+* KV v2: introduce two prefixes data and metadata
+  * those are required for api calls and Vault policies
+  * With KV v2 you can perform rollback (creates a new version) or undelete (not creates a new version)
+  * Destroy operation delete the info on disk
+* Write is a NOT a merge, it creates a completely new version
+* A delete on V1: Data is destroyed - A delete on V2: Soft delete (for destroy in V2 use destroy command)
+* If the latest version of the secret has been deleted (KV V2) it will return the related metadata but no data (secrets)
+
+### Transit Secrets Engine
+
+* Transit engine provides functions for **encrypting/decrypting data**
+  * Enables us to centralize encryption data
+* Applications can send cleartext data (base64 encoded) for encryption
+  * Valut encypts using an key an returns ciphertext to the app.
+  * the application **NEVER** has access to the encyption key (stored and created in vault)
+* Transit secrets engine **DOES NOT STORE** the encrypted data
+* Apps must have permission to use key for encryption/decryption operations, which is bound by the policy attached ton its token
+* Keys can be easily rotated:
+  * Keys are stored on keyring
+  * Can limit what version(s) of keys can be use for decryption
+  * you can create, rotate, delete, and export a key
+  * Easily rewrap ciphertext with a newer version of a key
+* Valut also support convergent ecnryption (samme ciphertext back)
+* Default key type: aes256-gcm96
+* Vault includes a feature to set auto-rotation on a Transit Key
+
+### AWS Secrets Engine
+
+* Enable aws secrets engine
+  * `vault secrets enable aws`
+* you have to config the engine after enable it with the aws credentials
+  * `vault write -f aws/config/root`
+* root credentials are easy to rotate in orde that nobody knows the credentials
+  * `vault write -f aws/config/rotate-root`
+* You need to create a role with a policy arn 
+  * `vault write aws/roles/<ROLE_NAME> policy_arns=<POLICIES> credential_type=<CREDENTIAL_TYPE>`
+* Use the role to create the dynamic secrets
+  * `vault read aws/creds/vaultadvanced`
+* Use the lease_id to revoke a credentials
+  * `vault lease revoke aws/creds/<ROLE_NAME>/<ID>`
+  * `vault lease revoke -prefix aws/creds/<ROLE_NAME>`
+
+### Database Secrets Engine
+
+* Enable database secrets engine
+  * `vault secrets enable -path=mysql database`
+* you have to config the engine after enable it with the database credentials
+  * `vault write -f mysql/config/<DATABASE_NAME>`
+* root credentials are easy to rotate in orde that nobody knows the credentials
+  * `vault write -f mysql/rotate-root/<DATABASE_NAME>`
+* You need to create a role with a creation statement
+  * `vault write mysql/roles/<ROLE_NAME> db_name=<DB_NAME> creation_statements=<STATEMENT>`
+* Use the role to create an user and pass
+  * `vault read mysql/creds/<ROLE_NAME>`
+* Use the lease_id to revoke a credentials
+  * `vault lease revoke mysql/creds/<ROLE_NAME>/<ID>`
+  * `vault lease revoke -prefix aws/creds/<ROLE_NAME>`
+
+### PKI Secrets Engine
+
+* Enable pki secrets engine
+  * `vault secrets enable pki`
+* Set signed to our pki secrets engine
+  * `vault write pki/intermediate/set-sgined certificate="@<CERT.PEM>"`
+* Create a role
+  * `vault write pki/roles/<ROLE_NAME>`
+* Generate certificates from our role
+  * `vault write pki/issue/<ROLE_NAME> common_name="<DOMAIN>" ttl=<TTL>`
+
+### TOTP Secret Engine
+
+* Enable totp secrets engine
+  * `vault secrets enable totp`
+* Configure totp
+  * `vault write totp/keys/aws url=<TOTP_URL>`
+* Generate totp
+  * `vault read totp/code/aws`
 ## Vault Commands
 
 ### Init Vault
@@ -548,10 +671,21 @@ Information regarding the Vault Associate Certification
 ### Unseal Vault & Migrate
 `vault operator unseal -migrate `
 
+### secrets
 ### Enable Secret Engine
 `vault secrets enable -path=secrets kv-v2`
+
+### Disable Secret Engine
+`vault secrets disable <PATH>`
 ### List Secrets
-`vault secrets list`
+`vault secrets list -detailed`
+
+### Move Secrets
+`vault secrets move`
+
+### Update Secrets
+`vault secrets tune`
+
 ### Enable transit
 `vault secrets enable transit`
 
@@ -607,3 +741,61 @@ Information regarding the Vault Associate Certification
 
 ### Get created tokens
 `vault list auth/token/accessors`
+
+### Vault VK
+
+### write data to the KV
+`vault kv put <PATH> <KEY=VALUE> <KEY=VALUE> <KEY=VALUE> <KEY=VALUE>...`
+`vault kv put <PATH> @secrets.json`
+
+### read data from the KV
+`vault kv get <PATH>`
+`vault kv get -format=json <PATH>`
+`vault kv get -version=<VERSION_NUMBER> <PATH>`
+
+### delete data from the KV
+`vault kv delete`
+
+### list data from the KV
+`vault kv list`
+
+### Only available on KV-V2
+### undelete data from the KV
+`vault kv undelete`
+
+### permanently destroy data from the KV
+`vault kv destroy`
+
+### update specific key to the KV
+`vault kv patch <PATH> <KEY=VALUE>`
+
+### recover old data from the KV
+`vault kv rollback -version=<VERSION> <PATH>`
+
+### Transit Secret Engine
+
+### Enable transit secret engine
+* `vault secret transit enable`
+
+### create a key 
+`vault write -f transit/keys/<KEY_NAME>`
+`vault write -f transit/keys/<KEY_NAME> type="rsa-4096"`
+
+### Read a key 
+`vault read transit/keys/<KEY_NAME>`
+
+### Encrypt data
+`vault write transit/encrypt/<KEY_NAME> plaintext=<BASE64_DATA>`
+
+### Decrypt data
+`vault write transit/decrypt/<KEY_NAME> cybertext=<CIPHER_TEXT>`
+`vault write transit/decrypt/<KEY_NAME> cybertext="vault:v1:Fpy......"`
+
+### Rotate Key
+`vault write transit/keys/<KEY_NAME>/rotate`
+
+### Setting minimum decryption version
+`vault write transit/keys/<KEY_NAME>/config min_decryption_version=4`
+
+### Rewrapping data
+`vault write transit/rewrap/<KEY_NAME> ciphertext="<CIPHER_TEXT>"`
