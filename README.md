@@ -89,7 +89,7 @@ Information regarding the Vault Associate Certification
 * The path prefix tell Vault which component a request should be routed.
 * Secret engines, auth methods, and audit devices are  "mounted" at a specified path
 * Paths available are dependent on the features enabled in Vault, such as Auth methods and secrets engines
-* System backend is a default backend in Vault which is mmounted at the /sys endpoint
+* System backend is a default backend in Vault which is mounted at the /sys endpoint
 * Vault components can be enabled at ANY path you'd like using the -path flag (Each component have a default path)
 * Vault has a few system reserved path which you cannot use or remove:
   * auth/
@@ -327,7 +327,7 @@ Information regarding the Vault Associate Certification
 ### Vault Entities 
 
 * Entity: representation of a single person or system used to log into vault
-* Alias: is a combination of the method plus some identification, it is a mapping between an entity and auth method(s), for exammple "userpass:danielc", "LDAP:jsmith@example.com" (those have different entity_id)
+* Alias: is a combination of the method plus some identification, it is a mapping between an entity and auth method(s), for example "userpass:danielc", "LDAP:jsmith@example.com" (those have different entity_id)
 * Vault always creates any time that you logged for the first time, and attaches and alias to it
   * This is done by the Identity secrets engine
 * You can manually create an entity to **map multiple entities for a single user**, any token that are created for the entity **inherit the capabilities** that are granted by alias(es)
@@ -410,8 +410,8 @@ Information regarding the Vault Associate Certification
 
 ### Customizing the Path
 
-* The star "*" is a wildcard and can only be used at the end of a path (i.e., kv/data/prod/*)
-* The plus "+" is a wildcard mmatching for a single directory in the path (i.e., secret/+/+/db)
+* The star `*` is a wildcard and can only be used at the end of a path (i.e., kv/data/prod/*)
+* The plus `+` is a wildcard mmatching for a single directory in the path (i.e., secret/+/+/db)
 * ACL Templating: 
   * Use variable replacement in some policy string with values available to the token
   * 
@@ -449,13 +449,13 @@ Information regarding the Vault Associate Certification
   * can be renewed, revoked, and create child tokens
   * Use Limit Token
     * you can assign a use limit (how many times the token can be used)
-    * Use limmits token expire when at the end of their last use or at the end of their TTL (The first thing that happens)
+    * Use limits token expire when at the end of their last use or at the end of their TTL (The first thing that happens)
     * the metadata "num_uses" shows how many  remaining uses has the token
     * create a use limit token:
       `vault token create -policy=<POLICY_NAME> -use-limit=2`
   * Periodic Service Token
     * Root or sudo users have the ability to generate it.
-    * It have a TTL but not a MaxTTL
+    * It has a TTL but not a MaxTTL
     * create a periodic token:
       `vault token create -policy=<POLICY_NAME> -period=24h`
   * Orphan Service Token
@@ -560,7 +560,7 @@ Information regarding the Vault Associate Certification
 * You can enabled a secret engine using the CLI, API or, UI (most of them) - (cubyhole and identity are enabled by default)
 * configuring a secret engine:
   1. Configure Vault with access to the platform
-  2. Configure roles based on permmissions needed
+  2. Configure roles based on permissions needed
 
 ### Key Value Secret Engine
 
@@ -583,7 +583,7 @@ Information regarding the Vault Associate Certification
   * Destroy operation delete the info on disk
 * Write is a NOT a merge, it creates a completely new version
 * A delete on V1: Data is destroyed - A delete on V2: Soft delete (for destroy in V2 use destroy command)
-* If the latest version of the secret has been deleted (KV V2) it will return the related metadata but no data (secrets)
+* If the latest version of the secret has been deleted (KV V2) it will return the related metadata but no the data (secrets)
 
 ### Transit Secrets Engine
 
